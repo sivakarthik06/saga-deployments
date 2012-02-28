@@ -7,23 +7,26 @@ BEGIN {
   sub help (;$);
 }
 
+
 my $CSA_HOSTS   = "./csa_hosts";
 my $CSA_PACK    = "./csa_packages";
-
+my $CSA_TEST    = "./csa_test";
 my $ENV         = `which env`;
-my $MAKE        = "make";
-my $csa_src     = "https://github.com/saga-project/saga-deployments.git/trunk/";
+my $svn         = "https://svn.cct.lsu.edu/repos/saga_siva/csa_testing/";
 my %csa_hosts   = ();
 my %csa_packs   = ();
+my %test_hosts  = ();
 my @modules     = ();
 my @hosts       = ();
+my @middleware  = ();
 my $def_version = "";
 my $version     = "";
 my $do_exe      = 0;
 my $do_list     = 0;
 my $do_check    = 0;
 my $do_deploy   = 0;
-my $experiment  = 0;
+my $be_strict   = 0;
+my $do_test     = 0;
 my $do_force    = 0;
 my $force       = "";
 my $fake        = 0;
@@ -80,9 +83,9 @@ while ( my $arg = shift )
   {
     $show = 1;
   }
-  elsif ( $arg =~ /^(-e|--exp|--esa|--experimental)$/io )
+  elsif ( $arg =~ /^(-e|--error|--exit)$/io )
   {
-    $experiment = 1;
+    $be_strict = 1;
   }
   elsif ( $arg =~ /^(-f|--force)$/io )
   {
@@ -105,6 +108,12 @@ while ( my $arg = shift )
   {
     help (0);
   }
+  elsif ( $arg =~ /^(-j|--job)$/io )
+  {
+   $do_test = 1;
+   my $tmp = shift || "all";
+   @middleware = split (/,/, $tmp);
+  }
   elsif ( $arg =~ /^-/io )
   {
     warn "WARNING: cannot parse command line flag '$arg'\n";
@@ -126,19 +135,10 @@ if ( ! scalar (@modules) )
 }
 
 
-my $SVNCI = "";
-
-if ( $svnpass )
-{
-  $SVNCI = "svn --no-auth-cache";
-  if ( $svnuser ) { $SVNCI .= " --username '$svnuser'"; }
-  if ( $svnpass ) { $SVNCI .= " --password '$svnpass'"; }
-  $SVNCI .= " ci";
-}
-else
-{
-  $SVNCI = "echo -- ";
-}
+my $SVNCI = "svn --no-auth-cache";
+if ( $svnuser ) { $SVNCI .= " --username '$svnuser'"; }
+if ( $svnpass ) { $SVNCI .= " --password '$svnpass'"; }
+$SVNCI .= " ci";
 
 # read and parse csa packages file
 {
@@ -173,52 +173,17 @@ else
     {
       my $tmp_mod  = $1;
       my $tmp_src  = $2;
-      my $tmp_tgt  = $3 || "";
+      my $tmp_tgt  = $3 || "*";
+      #print  $tmp_tgt . "\n";
+      
       my @tmp_tgts = split (/[\s,]+/, $tmp_tgt);
-
-      # if tgt's have only negatives, add star as default positive
-      # if 'esa' is listed as target, only use this module in 'esa' mode
-      my $has_positive = 0;
-      my $use_module   = 1;
-
-      foreach my $tgt ( @tmp_tgts )
-      {
-        if ( $tgt eq 'esa' )
-        {
-          if ( ! $experiment )
-          {
-            $use_module = 0;
-          }
-        }
-        elsif ( $tgt !~ /^\!/o )
-        {
-          $has_positive = 1;
-        }
-      }
-
-      if ( grep (/^esa$/, @tmp_tgts) )
-      {
-        # remove 'esa' from targets
-        @tmp_tgts = grep (!/^esa$/, @tmp_tgts);
-
-      }
-
-      if ( 0 == $has_positive )
-      {
-        splice (@tmp_tgts, 0, 0, '*');
-      }
-
-
-      if ( $use_module )
-      {
-        push ( @{$csa_packs{$tmp_version}{'modules'}}, {'name' => $tmp_mod,
-                                                        'src'  => $tmp_src, 
-                                                        'tgt'  => \@tmp_tgts});
-      }
-      else
-      {
-        print "ignore esa module $tmp_mod\n";
-      }
+      
+       #foreach my $val (@tmp_tgts){
+       # print $val."\n";
+       # }
+      push ( @{$csa_packs{$tmp_version}{'modules'}}, {'name' => $tmp_mod,
+                                                      'src'  => $tmp_src, 
+                                                      'tgt' => \@tmp_tgts});
     }
     else
     {
@@ -254,6 +219,7 @@ else
 
   foreach my $tmp ( @tmp )
   {
+  
     if ( $tmp =~ /^\s*(?:#.*)?$/io )
     {
       # skip comment lines and empty lines
@@ -269,11 +235,12 @@ else
       {
         warn "WARNING: duplicated csa host '$host'\n"
       }
-
+      #print "Every csa host $csa_hosts{$host} \n";
       $csa_hosts {$1}{'fqhn'}   = $fqhn;
       $csa_hosts {$1}{'path'}   = $path;
       $csa_hosts {$1}{'access'} = $access;
-    }
+print "Every csa host $1 \n";    
+}
     else
     {
       warn "WARNING: Cannot parse csa host line '$tmp'\n";
@@ -297,7 +264,7 @@ if ( grep (/all/, @modules) )
 #
 # TODO: for each module, we should also include all modules listed before 
 # that one, to actually satisfy not specified dependencies...
-{
+{ 
   my  @tmp = @modules;
   @modules = ();
 
@@ -318,7 +285,6 @@ if ( grep (/all/, @hosts) )
   @hosts = sort keys ( %csa_hosts );
 }
 
-
 if ( ! scalar (@hosts) )
 {
   if ( $do_check || $do_deploy || $do_exe || $do_remove )
@@ -336,17 +302,18 @@ foreach my $entry ( @modules )
 print <<EOT;
 +-------------------------------------------------------------------
 |
-| targets       : @hosts
-| modules       : $modstring
-| version       : $version
+| targets  : @hosts
+| modules  : $modstring
+| version  : $version
 |
-| exec          : $do_exe
-| remove        : $do_remove
-| deploy        : $do_deploy
-| check         : $do_check
+| exec     : $do_exe
+| remove   : $do_remove
+| deploy   : $do_deploy
+| check    : $do_check
+| test job : $do_test
 |
-| force         : $do_force
-| experimental  : $experiment
+| force    : $do_force
+| strict   : $be_strict
 |
 +-------------------------------------------------------------------
 EOT
@@ -414,11 +381,9 @@ if ( $do_exe )
     #              "       $path/saga/$version/$CPP/lib/python*/site-packages/* " .
     #              "       $path/external/python/2.7.1/$CPP/lib/python*/site-packages/*" .
     #              "       $path/saga/$version/$CPP/share/saga/config/python.m4" ;
-    # my $exe    = "rm -rv $path/csa/{doc,mod,test}/ ; " .
-    #              "cd     $path/     ; test -d csa || svn co https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa csa ; " .
-    #              "cd     $path/csa/ ; svn up";
-    # my $exe    = "rm -rv $path/src/saga-adaptor-ssh-*";
-      my $exe    = "rm -rv $path/csa/";
+      my $exe    = "rm -rv $path/csa/{doc,mod,test}/ ; " .
+                   "cd     $path/     ; test -d csa || svn co https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa csa ; " .
+                   "cd     $path/csa/ ; svn up";
 
       print "+-----------------+------------------------------------------+-------------------------------------+\n";
       printf "| %-15s | %-40s | %-35s |\n", $host, $fqhn, $path;
@@ -436,6 +401,7 @@ if ( $do_exe )
         if ( 0 != system ($cmd) )
         {
           print " -- error: cannot run $cmd\n";
+          exit -1 if $be_strict;
         }
       }
     }
@@ -484,6 +450,7 @@ if ( $do_remove )
         if ( 0 != system ($cmd) )
         {
           print " -- error: cannot remove csa installation\n";
+          exit -1 if $be_strict;
         }
       }
     }
@@ -516,6 +483,7 @@ if ( $do_deploy )
       printf "| %-15s | %-40s | %-35s |\n", $host, $fqhn, $path;
       print "+-----------------+------------------------------------------+-------------------------------------+\n";
 
+      
       foreach my $entry ( @modules )
       {
         my $mod_name = $entry->{'name'};
@@ -529,15 +497,14 @@ if ( $do_deploy )
                grep (/$host/,   @mod_tgts) )  )
         {
           my $cmd = "$access $fqhn 'mkdir -p $path ; " .
-                                   "cd $path && test -d csa && (cd csa && svn up) || svn co $csa_src csa; ". 
+                                   "cd $path && test -d csa && (cd csa && svn up) || svn co $svn csa; ". 
                                    "$ENV CSA_HOST=$host                 " .
-                                   "     CSA_ESA=$experiment            " .
                                    "     CSA_LOCATION=$path             " .
                                    "     CSA_SAGA_VERSION=$version      " .
                                    "     CSA_SAGA_SRC=\"$mod_src\"      " .
                                    "     CSA_SAGA_TGT=$mod_name-$version" .
                                    "     $force                         " .
-                                   "     $MAKE -C $path/csa/            " .
+                                   "     make -C $path/csa/             " .
                                    "          --no-print-directory      " .
                                    "          -f make.saga.csa.mk       " .
                                    "          $mod_name               ' " ;
@@ -551,17 +518,18 @@ if ( $do_deploy )
             if ( 0 != system ($cmd) )
             {
               print " -- error: cannot deploy $mod_name on $host\n";
+              exit -1 if $be_strict;
             }
           }
 
           if ( $mod_name eq "documentation" )
           {
-            my $cmd = "$access $fqhn ' cd $path/csa/                             && " .
-                                     " svn add doc/README.saga-$version.*.$host* && " .
-                                     " svn add mod/module.saga-$version.*.$host* && " .
-                                     " $SVNCI -m \"automated update\"               " .
-                                     "   doc/README.saga-$version.*.$host*          " .
-                                     "   mod/module.saga-$version.*.$host*'         " ;
+            my $cmd = "$access $fqhn ' cd $path/csa/                            && " .
+                                     " svn add doc/README.saga-$version.*.$host && " .
+                                     " svn add mod/module.saga-$version.*.$host && " .
+                                     " $SVNCI -m \"automated update\"              " .
+                                     "   doc/README.saga-$version.*.$host          " .
+                                     "   mod/module.saga-$version.*.$host       '  " ;
             if ( $show || $fake )
             {
               print " -- $cmd\n";
@@ -572,6 +540,7 @@ if ( $do_deploy )
               if ( 0 != system ($cmd) )
               {
                 print " -- error: cannot commit documentation\n";
+                exit -1 if $be_strict;
               }
             }
           }
@@ -616,13 +585,12 @@ if ( $do_check )
 
       {
         my $cmd = "$access $fqhn 'mkdir -p $path ; " .
-                  "cd $path && test -d csa && (cd csa && svn up) || svn co $csa_src csa; ". 
+                  "cd $path && test -d csa && (cd csa && svn up) || svn co $svn csa; ". 
                   "$ENV CSA_HOST=$host                 " .
-                  "     CSA_ESA=$experiment            " .
                   "     CSA_LOCATION=$path             " .
                   "     CSA_SAGA_VERSION=$version      " .
                   "     CSA_SAGA_CHECK=yes             " .
-                  "     $MAKE -C $path/csa/            " .
+                  "     make -C $path/csa/             " .
                   "          --no-print-directory      " .
                   "          -f make.saga.csa.mk       " .
                   "          all'                      " ;
@@ -637,15 +605,16 @@ if ( $do_check )
           if ( 0 != system ($cmd) )
           {
             print " -- error: cannot run csa checks\n";
+            exit -1 if $be_strict;
           }
         }
       }
 
       {
-        my $cmd = "$access $fqhn ' cd $path/csa/                               && " .
-                                 " svn add test/test.saga-$version.*.$host*    && " .
-                                 " $SVNCI -m \"automated update\"                 " .
-                                 "    test/test.saga-$version.*.$host*'           " ;
+        my $cmd = "$access $fqhn ' cd $path/csa/                           && " .
+                                 " svn add test/test.saga-$version.*.$host && " .
+                                 " $SVNCI -m \"automated update\"             " .
+                                 "    test/test.saga-$version.*.$host      '  " ;
         if ( $show || $fake )
         {
           print " -- $cmd\n";
@@ -656,6 +625,7 @@ if ( $do_check )
           if ( 0 != system ($cmd) )
           {
             print " -- error: cannot commit csa checks\n";
+            exit -1 if $be_strict;
           }
         }
       }
@@ -665,7 +635,202 @@ if ( $do_check )
   print "\n";
 }
 
+#Submit jobs on machines specified..
 
+if($do_test)
+{
+my @midware=();      
+my $test_host=0;
+my $midware=0;
+my @temp_host=();
+my @notfound=();
+my %test_hosts=();
+my @temp=();
+my @tmp=();
+my $cmd=0;
+
+  open   (TF, "<$CSA_TEST") || die "ERROR  : cannot open '$CSA_TEST': $!\n";
+  @tf = <TF>;
+  close  (TF);
+  chomp  (@tf);
+  foreach my $tf ( @tf )
+  {
+
+    if ( $tf =~ /^\s*(?:#.*)?$/io )
+    {
+      # skip comment lines and empty lines
+    }
+    elsif ( $tf =~ (/^\s*(\w+)\s+(\w+,*\w+)\s+(((\w+)=[\w.\/-]+)|([\w]+))*$/io) )
+    {
+      $test_host   = $1;
+      $midware     = $2;
+      $url         = $3;
+     
+      if (!defined($url))
+      {
+       $url="no";
+      }
+      print "URL is $url \n";
+# Get all the middlewares in @midware array
+{
+      my @tmp_midware=split (/,/, $midware);
+      foreach my $m (@tmp_midware)
+      {
+       if (!grep {$_ eq $m} @midware)
+        {      
+        push(@midware,$m);
+        }
+      }
+}
+  
+
+      #if ( exists ( $test_hosts{$test_host} ) )
+      #{
+       # warn "WARNING: repetitive entry, host '$test_host'";
+      #}
+      #else
+       {
+
+       # Check whether test host is present in the csa_hosts file
+       
+        if((grep {$_ eq $test_host} @hosts)&&(exists $csa_hosts{$test_host}))
+        {
+        $test_hosts {$test_host}{'middware'}   = $midware;
+        $test_hosts {$test_host}{'url'}        = $url;
+        }
+        #else
+        #{
+        #warn "WARNING: Test host '$test_host' not present in csa_hosts file \n";
+        #}
+      }
+     }
+    else
+    {
+      warn "WARNING: Cannot parse test host line '$tf'\n";
+    }
+  }
+        @temp_host=keys %test_hosts;
+  
+        foreach my $host ( @hosts )
+         {
+         print "Host is $host \n";
+         if ( ! exists $csa_hosts{$host} )
+         {
+         warn " -- warning: unknown host '$host'\n";
+         }
+         elsif (!grep {$_ eq $host} @temp_host)
+         {
+        warn "WARNING: host not tested '$host'\n";
+        }
+       }
+   if (! grep (/all/, @middleware) )
+   {
+   foreach my $mid (@middleware)
+   {
+    if (!grep {$_ eq $mid} @midware)
+    {
+     warn "WARNING: unknown middleware '$mid' \n";
+    }
+   }
+}
+# Print all the available and unavailable middlewares respective to the hosts
+
+print "+-----------------+------------------------------------------+------------------------------------+\n";
+printf "| %-15s | %-40s | %-35s|\n", "Host", "Available", "Not Available";
+print "+-----------------+------------------------------------------+------------------------------------+\n";
+   foreach my $h (@temp_host)
+   {
+   @tmp=();
+   @temp=();
+   printf "| %-15s |",$h;
+  
+    my @temp_midware = split (/,/,$test_hosts{$h}{'middware'});
+   if (grep (/all/, @middleware) )
+    {
+      $" = ",";
+     printf " %-40s |","@temp_midware";
+     printf "%-35s |",""; 
+     } 
+  else
+   {
+    foreach my $m (@middleware)
+    {
+    if (grep (/$m/,@temp_midware))
+    {
+    push (@tmp, $m);
+    }
+    else
+    {
+    push (@temp, $m);
+    }
+    }
+    $" = ",";
+    my $a=@tmp;
+    if ($a)
+    {
+    $test_hosts{$h}{'middware'}="@tmp";
+    }
+    else
+    { 
+    $test_hosts{$h}{'middware'}=();
+    }
+    printf " %-40s |","@tmp";
+    printf "%-35s |","@temp"; 
+   }
+    printf "\n";
+print "+-----------------+------------------------------------------+------------------------------------+\n";
+    }
+#my @a=keys (%test_hosts);
+#foreach my $a (@a)
+#{
+#printf $test_hosts{$a};
+#}
+#--------------#---------------#---------------#
+# Submit jobs
+
+foreach my $host (@temp_host)
+{
+my $fqdn   = $csa_hosts{$host}{'fqhn'};
+my $path   = $csa_hosts{$host}{'path'};
+my $access = $csa_hosts{$host}{'access'};
+my $miware= $test_hosts{$host}{'middware'};
+
+#Get the url if it is globus or condor
+my $url=0;
+
+if(!($test_hosts{$host}{'url'} eq "no"))
+{
+my @url=split(/,/,$test_hosts{$host}{'url'});
+ foreach my $m (@url)
+ {
+ @urldiv=split(/=/,$m);
+ if ($urldiv[0] eq $miware)
+  {
+  $url = $urldiv[1];
+  }
+ }
+}
+else
+{
+ $url   = $test_hosts{$host}{'url'};
+}
+if ($miware)
+{
+$cmd = "$access $fqdn 'mkdir -p $path ; " .
+                  "cd $path && test -d csa && (cd csa && svn up) || svn co $svn csa;".
+                  "$path/csa/csa_midtest.pl  $fqdn $miware $url'"; 
+
+print "$cmd \n";
+
+if ( 0 != system ($cmd) )
+          {
+            print " Error: Cannot complete CSA test\n";
+            exit -1;
+          }
+
+}
+}
+}
 
 sub help (;$)
 {
@@ -678,7 +843,7 @@ sub help (;$)
        [-c|--check] 
        [-v|--version version=all] 
        [-n|--no]
-       [-e|--experimental]
+       [-e|--exit|--error]
        [-f|--force]
        [-s|--show]
        [-d|--deploy]
@@ -688,6 +853,7 @@ sub help (;$)
        [-p|--pass pw] 
        [-t|--target all,host1,host2,...] 
        [-m|--module all,saga-core,readme,...] 
+       [-j]--job all,pbs,gram,...]
 
     -h : this help message
     -l : list available target hosts
@@ -698,14 +864,14 @@ sub help (;$)
     -p : svn password                               (default: "")
     -n : run 'make -n' to show what *would* be done (default: off)
     -s : show commands to be run                    (default: off)
-    -e : experimental software deployment           (default: off)
+    -e : exit on errors                             (default: off)
     -f : force re-deploy                            (default: off)
     -d : deploy version/modules on targets          (default: off)
     -r : remove deployment on target host           (default: off)
     -x : for maintainance, use with care!           (default: off)
     -t : target hosts to deploy on                  (default: all)
     -m : modules to deploy                          (default: all)
-
+    -j : submit test jobs                           (default: off)
 EOT
   exit ($ret);
 }

@@ -1,0 +1,8 @@
+#File contains host and middlewares associated with it
+
+india          pbspro,torque                                        
+kraken         pbs,gram                                      gram=gridftp1.ls4.tacc.utexas.edu/jobmanager-fork
+ranger         gram                                          gram=gridftp1.ls4.tacc.utexas.edu/jobmanager-fork
+qb             condor                                        
+lonestar       gram,torque                                   gram=gridftp1.ls4.tacc.utexas.edu/jobmanager-sge
+
