@@ -235,11 +235,9 @@ $SVNCI .= " ci";
       {
         warn "WARNING: duplicated csa host '$host'\n"
       }
-      #print "Every csa host $csa_hosts{$host} \n";
       $csa_hosts {$1}{'fqhn'}   = $fqhn;
       $csa_hosts {$1}{'path'}   = $path;
       $csa_hosts {$1}{'access'} = $access;
-print "Every csa host $1 \n";    
 }
     else
     {
@@ -660,17 +658,17 @@ my $cmd=0;
     {
       # skip comment lines and empty lines
     }
-    elsif ( $tf =~ (/^\s*(\w+)\s+(\w+,*\w+)\s+(((\w+)=[\w.\/-]+)|([\w]+))*$/io) )
+    elsif ( $tf =~ (/^\s*(\w+)\s+(\w+,*\w+)\s+(((\w+)[\w+.:,\/-]+)|([\w]+))\s+(((\w+)[\w+.,=\/:-]+)|([\w]+))*$/io) )
     {
       $test_host   = $1;
       $midware     = $2;
-      $url         = $3;
-     
-      if (!defined($url))
+      $env_url	   = $3;
+      $url         = $7;
+     print "url is $url\n";
+	 if (!defined($url))
       {
        $url="no";
       }
-      print "URL is $url \n";
 # Get all the middlewares in @midware array
 {
       my @tmp_midware=split (/,/, $midware);
@@ -697,8 +695,9 @@ my $cmd=0;
         {
         $test_hosts {$test_host}{'middware'}   = $midware;
         $test_hosts {$test_host}{'url'}        = $url;
+        $test_hosts {$test_host}{'env_url'}    = $env_url;
         }
-        #else
+	 #else
         #{
         #warn "WARNING: Test host '$test_host' not present in csa_hosts file \n";
         #}
@@ -713,7 +712,6 @@ my $cmd=0;
   
         foreach my $host ( @hosts )
          {
-         print "Host is $host \n";
          if ( ! exists $csa_hosts{$host} )
          {
          warn " -- warning: unknown host '$host'\n";
@@ -787,22 +785,27 @@ print "+-----------------+------------------------------------------+-----------
 #}
 #--------------#---------------#---------------#
 # Submit jobs
-
+my $url = "no";
 foreach my $host (@temp_host)
 {
 my $fqdn   = $csa_hosts{$host}{'fqhn'};
 my $path   = $csa_hosts{$host}{'path'};
 my $access = $csa_hosts{$host}{'access'};
-my $miware= $test_hosts{$host}{'middware'};
+my $miware = $test_hosts{$host}{'middware'};
+my $url = $test_hosts{$host}{'url'};
+my $env_url = $test_hosts{$host}{'env_url'};
 
+=head
 #Get the url if it is globus or condor
 my $url=0;
-
+print "Final url is $test_hosts{$host}{'url'} \n"; 
 if(!($test_hosts{$host}{'url'} eq "no"))
 {
 my @url=split(/,/,$test_hosts{$host}{'url'});
  foreach my $m (@url)
  {
+print "inside if\n";
+print "m is $m \n";
  @urldiv=split(/=/,$m);
  if ($urldiv[0] eq $miware)
   {
@@ -814,11 +817,13 @@ else
 {
  $url   = $test_hosts{$host}{'url'};
 }
+=cut
+
 if ($miware)
 {
 $cmd = "$access $fqdn 'mkdir -p $path ; " .
                   "cd $path && test -d csa && (cd csa && svn up) || svn co $svn csa;".
-                  "$path/csa/csa_midtest.pl  $fqdn $miware $url'"; 
+                  "$path/csa/csa_midtest.pl  $fqdn $miware $env_url $url'"; 
 
 print "$cmd \n";
 
