@@ -1,7 +1,8 @@
 #File contains host and middlewares associated with it
 
-india       pbspro,gram     https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.1.2.india    gram=gridftp1.ls4.tacc.utexas.edu/jobmanager-fork
+india       pbspro,gram     https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.1.2.india    
 kraken      pbspro,gram    https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.1.2.kraken     gram=gridftp1.ls4.tacc.utexas.edu/jobmanager-fork
 ranger      gram         https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.4.5.ranger        gram=gridftp1.ls4.tacc.utexas.edu/jobmanager-fork
 qb          condor       nolink
 lonestar    gram,condor   https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.1.2.lonestar    gram=gridftp1.ls4.tacc.utexas.edu/jobmanager-fork,gram=gridftp1.ls4.tacc.utexas.edu:2119/jobmanager-sge
+blacklight  pbspro,gram   https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.3.4.blacklight    

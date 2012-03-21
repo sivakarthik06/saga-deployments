@@ -664,7 +664,7 @@ my $cmd=0;
       $midware     = $2;
       $env_url	   = $3;
       $url         = $7;
-     print "url is $url\n";
+    # print "url is $url\n";
 	 if (!defined($url))
       {
        $url="no";
@@ -823,7 +823,9 @@ if ($miware)
 {
 $cmd = "$access $fqdn 'mkdir -p $path ; " .
                   "cd $path && test -d csa && (cd csa && svn up) || svn co $svn csa;".
-                  "$path/csa/csa_midtest.pl  $fqdn $miware $env_url $url'"; 
+                  "$path/csa/csa_envset.pl $env_url;".
+                  "source $path/csa/test_scripts/env.sh;".
+		  "$path/csa/csa_midtest.pl  $fqdn $miware $url'"; 
 
 print "$cmd \n";
 
