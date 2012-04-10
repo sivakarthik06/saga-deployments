@@ -20,9 +20,9 @@ steele       tg-steele.purdue.teragrid.org          /tg_community/saga/         
 
 # FutureGrid
 india        india.futuregrid.org                   /N/u/sivak2606                        ssh -l sivak2606 
-sierra       sierra.futuregrid.org                  /N/u/sivak2606/                       ssh -l merzky -q
+sierra       sierra.futuregrid.org                  /N/u/sivak2606/                       ssh -l sivak2606 -q
 alamo        alamo.futuregrid.org                   /N/soft/SAGA/                        ssh -l merzky -q
-hotel        hotel.futuregrid.org                   /N/soft/x86_64/el5/hotel/SAGA        ssh -l merzky -q
+hotel        hotel.futuregrid.org                   /N/u/sivak2606                        ssh -l sivak2606 -q
 
 # EGI
 

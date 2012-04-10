@@ -40,12 +40,8 @@ my @middleware=split(/,/,$midware);
   }
  }
 
-
-
-
 #Change to test directory
- 
- chdir ("csa");
+  chdir ("csa");
  my $csa_home=cwd();
 
 #Remove the previous result directories
@@ -73,19 +69,11 @@ my @middleware=split(/,/,$midware);
  foreach my $mw(@middleware)
  {
 
-  if($mw eq "bigjob")
-  {
-   system("wget $bigjob_script");
-  
-   system("python example_local_single.py >> $results_home/result_bigjob");
-   
-   next;  
-  }
 
 #X.509 Certificates
   if ($mw eq "gram")
   {
-  print "#--- Enter the proxy credentials for X.509 certificate renewal ---#\n";
+  print "\n#--- Enter the proxy credentials for X.509 certificate renewal ---#\n";
   system("myproxy-logon -q");
   }
  
@@ -100,7 +88,14 @@ my @middleware=split(/,/,$midware);
         {
         my $a=system("rm test_$mw-$jm.py");
         }
-   {
+   
+if($mw eq "bigjob")
+  {
+   system("wget $bigjob_script > /dev/null 2>&1");
+
+   system("python example_local_single.py > $results_home/result_$mw-$jm 2>&1");
+  }
+else {
    #Create the job script
    sysopen (JOB, "test_$mw-$jm.py", O_RDWR|O_EXCL|O_CREAT, 0755) or die "File already exists\n";
    
@@ -147,7 +142,7 @@ my @middleware=split(/,/,$midware);
    printf JOB "   jd\.set_attribute(\"Executable\"\,\"/bin/echo\")\n";
    printf JOB "   jd\.set_vector_attribute(\"Arguments\"\, [\"Hello\, World!\"])\n";
    printf JOB "   jd\.output=(\"$results_home\/out_$mw-$jm\")\n";
- }
+ 
  if ($jm eq 'nourl' && $mw eq 'fork')
   {
   printf JOB "   js = saga.job.service(\"$mw://localhost\")\n";
@@ -176,14 +171,8 @@ printf JOB "     print err\n\n";
 printf JOB "wait_for_all_jobs(jobs\, job_start_times\,job_states\, 5)\n";
 
 system("nohup python \$HOME/csa/test_scripts/test_$mw-$jm.py > $results_home/result_$mw-$jm 2>&1 &");
-
-=head
-
-if (-e "result_$mw-$jm") {
- my $a=system("rm result_$mw-$jm")
 }
-=cut
-sleep(10);
+sleep(5);
 my $flag=0;
 open (RE, "$results_home/result_$mw-$jm") or die "Cannot open result file\n";
 my @result = <RE>;
@@ -191,24 +180,27 @@ close  (RE);
 chomp  (@result);
 foreach my $result ( @result )
  {
-  if ($result =~ /^\s*(ERROR|error)(:\s*)*$/io)
+  #if ($result =~ /^\s*(ERROR|error)(:\s*)*$/io)
+  if (($result =~ m/error/) or ($result =~ m/Error/) or ($result =~ /^\s*(ERROR|error)(:\s*)*$/io))
   {
   $flag=1;
   }
  }
 
-while(-z "$results_home\/out_$mw-$jm")
-{
-sleep(10);
-}
 
 if($flag)
 {
-print "$mw - $jm ------> Failed \n\n";
+print "$mw - $jm ------> Failed \n";
 }
 else
 {
-print "$mw - $jm ------> Success! \n\n";
+print "$mw - $jm ------> Success! \n";
+
+ while(-z "$results_home\/out_$mw-$jm")
+ {
+ sleep(5);
+ }
+
 }
 
 }
@@ -219,5 +211,3 @@ print "\n\n+--------------------------------------------------------------------
 
 #Add the results back to svn
   system("svn import $results_home $result_svn\/results_$time\/$hostname\/ -m \"Added results\" -q")
-  #system("svn add $results_home/*");
-  #system("svn commit -m \"Adding $results_home\" $results_home");

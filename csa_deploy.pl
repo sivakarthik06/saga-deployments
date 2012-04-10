@@ -735,7 +735,7 @@ $time=~s/:/-/g;
          }
          elsif (!grep {$_ eq $host} @temp_host)
          {
-        warn "WARNING: host not tested '$host'\n";
+        warn "WARNING: Host '$host' not added to the csa_test file\n";
         }
        }
    if (! grep (/all/, @middleware) )
@@ -803,6 +803,7 @@ print "+-----------------+------------------------------------------+-----------
 #--------------#---------------#---------------#
 # Submit jobs
 my $url = "no";
+my $modules="";
 foreach my $host (@temp_host)
 {
 my $fqdn   = $csa_hosts{$host}{'fqhn'};
@@ -811,7 +812,7 @@ my $access = $csa_hosts{$host}{'access'};
 my $miware = $test_hosts{$host}{'middware'};
 my $url = $test_hosts{$host}{'url'};
 my $env_url = $test_hosts{$host}{'env_url'};
-my $modules = $test_hosts{$host}{'modules'};
+$modules = $test_hosts{$host}{'modules'};
 =head
 #Get the url if it is globus or condor
 my $url=0;
