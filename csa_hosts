@@ -10,11 +10,11 @@ localhost    localhost                              /home/merzky/saga/csa/deploy
 # cyder        cyder.cct.lsu.edu                      /home/amerzky/csa/                   ssh -l amerzky -q
 
 # TeraGrid / XSEDE
-# queenbee	 login1-qb.loni-lsu.teragrid.org        /project/tg_csa/saga/                gsissh -q
-kraken       kraken-gsi.nics.utk.edu                /nics/a/proj/saga/                ssh -l sivak06
-ranger       tg-login.ranger.tacc.teragrid.org      /scratch/projects/tg/SAGA/           gsissh -q
-lonestar     tg-login.lonestar.tacc.teragrid.org    /home1/01953/sivak06             ssh -l sivak06
-blacklight   tg-login.blacklight.psc.teragrid.org   usr/users/5/sivak06 	     ssh -l sivak06
+# queenbee	 login1-qb.loni-lsu.teragrid.org        /project/tg_csa/saga/               gsissh -q
+kraken       kraken-gsi.nics.utk.edu                /usr/users/5/sivak06                 ssh -l sivak06
+ranger       tg-login.ranger.tacc.teragrid.org     /share/home/01953/sivak06             ssh -l sivak06
+lonestar     tg-login.lonestar.tacc.teragrid.org    /home1/01953/sivak06                 ssh -l sivak06
+blacklight   tg-login.blacklight.psc.teragrid.org   /usr/users/5/sivak06    	         ssh -l sivak06
 trestles     trestles-login.sdsc.edu                /phase1/saga-project/                gsissh -q
 steele       tg-steele.purdue.teragrid.org          /tg_community/saga/                  gsissh -q
 

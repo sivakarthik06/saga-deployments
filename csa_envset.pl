@@ -4,6 +4,7 @@ use strict;
 use Cwd;
 
 my $env_url=shift(@ARGV);
+my $modules=shift(@ARGV);
 my $file_env=0;
 
 #Change to test directory
@@ -17,8 +18,12 @@ my $file_env=0;
 
 my $home=getcwd();
 
+#Get the specific modules into the list
+my @modules=split(/,/,$modules);
+
+
 #Get the README file from the SAGA website
- system("wget -q $env_url");
+ system("wget --no-check-certificate -q $env_url");
 
 #Get the name of the file
  if ($env_url =~ (/^\s*(([\w+.:\/-]+)(README([\w+.-]+)))*$/io))
@@ -31,12 +36,34 @@ $file_env=$3;
  {
  system ("rm env.sh");
  }
+
+#Find the type of shell
+
+my $sh=`echo \$SHELL`;
+
 sysopen (SC, 'env.sh', O_RDWR|O_EXCL|O_CREAT, 0755) or die "Env files exists already\n";
  open (TF, "<$file_env") or die "Cannot open file\n";
  my @tf = <TF>;
  close  (TF);
  chomp  (@tf);
- foreach my $tf ( @tf )
+
+foreach my $mod (@modules)
+ {
+
+print SC "$mod\n";
+=head    
+if ($mod =~ (/^\s*([\w+\s*]+)*$/io))
+    {
+    print SC "$mod\n";
+    }
+    elsif ($mod =~ (/^\s*?((export)\s+)/io))
+    {
+    print SC "$mod\n";
+    }
+=cut
+ }
+
+foreach my $tf ( @tf )
    {
         if ( $tf =~ /^\s*(?:#.*)?$/io )
         {
@@ -46,8 +73,8 @@ sysopen (SC, 'env.sh', O_RDWR|O_EXCL|O_CREAT, 0755) or die "Env files exists alr
         {
         printf SC "$tf\n";
         }
-        }
-printf SC "export PBS_HOME=/opt/torque\n";
+    }
+
  close(TF);
  close(SC);
 

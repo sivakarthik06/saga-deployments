@@ -646,6 +646,9 @@ my %test_hosts=();
 my @temp=();
 my @tmp=();
 my $cmd=0;
+my $time=localtime(time);
+$time=~s/ /_/g;
+$time=~s/:/-/g;
 
   open   (TF, "<$CSA_TEST") || die "ERROR  : cannot open '$CSA_TEST': $!\n";
   @tf = <TF>;
@@ -658,9 +661,18 @@ my $cmd=0;
     {
       # skip comment lines and empty lines
     }
-    elsif ( $tf =~ (/^\s*(\w+)\s+(\w+,*\w+)\s+(((\w+)[\w+.:,\/-]+)|([\w]+))\s+(((\w+)[\w+.,=\/:-]+)|([\w]+))*$/io) )
+
+    elsif ($tf =~ (/^\s*(\w+)\s+([\w+,\/_=\s]+)*$/io))
+        {
+         if((grep {$_ eq $1} @hosts)&&(exists $csa_hosts{$1}))
+        {
+         $test_hosts {$1}{'modules'} = $2;   
+        }
+        }
+
+    elsif ( $tf =~ (/^\s*(\w+)\s+([\w+,*]+)\s+(((\w+)[\w+.:,\/-]+)|([\w]+))\s*(((\w+)[\w+.,=\/:-]+)|([\w]+))*$/io) )
     {
-      $test_host   = $1;
+      $test_host   = $1; 
       $midware     = $2;
       $env_url	   = $3;
       $url         = $7;
@@ -687,7 +699,7 @@ my $cmd=0;
        # warn "WARNING: repetitive entry, host '$test_host'";
       #}
       #else
-       {
+      # {
 
        # Check whether test host is present in the csa_hosts file
        
@@ -697,12 +709,17 @@ my $cmd=0;
         $test_hosts {$test_host}{'url'}        = $url;
         $test_hosts {$test_host}{'env_url'}    = $env_url;
         }
-	 #else
-        #{
-        #warn "WARNING: Test host '$test_host' not present in csa_hosts file \n";
-        #}
-      }
+     # }
      }
+=head
+	elsif ($tf =~ (/^\s*(\w+)\s+([\w+,\/_=\s]+)*$/io))
+	{
+         if((grep {$_ eq $1} @hosts)&&(exists $csa_hosts{$1}))
+	{
+         $test_hosts {$1}{'modules'} = $2;    
+	}
+	}
+=cut
     else
     {
       warn "WARNING: Cannot parse test host line '$tf'\n";
@@ -794,7 +811,7 @@ my $access = $csa_hosts{$host}{'access'};
 my $miware = $test_hosts{$host}{'middware'};
 my $url = $test_hosts{$host}{'url'};
 my $env_url = $test_hosts{$host}{'env_url'};
-
+my $modules = $test_hosts{$host}{'modules'};
 =head
 #Get the url if it is globus or condor
 my $url=0;
@@ -821,11 +838,11 @@ else
 
 if ($miware)
 {
-$cmd = "$access $fqdn 'mkdir -p $path ; " .
+		  $cmd = "$access $fqdn 'mkdir -p $path;".
                   "cd $path && test -d csa && (cd csa && svn up) || svn co $svn csa;".
-                  "$path/csa/csa_envset.pl $env_url;".
+                  "$path/csa/csa_envset.pl \"$env_url\" \"$modules\";".
                   "source $path/csa/test_scripts/env.sh;".
-		  "$path/csa/csa_midtest.pl  $fqdn $miware $url'"; 
+		  "$path/csa/csa_midtest.pl  $fqdn $miware $url $time $host'"; 
 
 print "$cmd \n";
 
