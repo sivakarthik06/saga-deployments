@@ -1,10 +1,10 @@
 #File contains host and middlewares associated with it
 
-india       pbspro,lsf,ssh     https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.1.2.india
+india       pbspro,fork,ssh     https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.1.2.india
 blacklight    pbspro,gram    https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.3.4.blacklight
 kraken      pbspro,gram    https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.1.2.kraken     gram=gridftp1.ls4.tacc.utexas.edu/jobmanager-fork
 ranger      pbspro    https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.4.5.ranger
-lonestar    gram,bigjob,condor   https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.1.2.lonestar    gram=gridftp1.ls4.tacc.utexas.edu:2119/jobmanager-fork,gram=gridftp1.ls4.tacc.utexas.edu:2119/jobmanager-sge
+lonestar    gram,bigjob,fork   https://svn.cct.lsu.edu/repos/saga-projects/deployment/tg-csa/doc/README.saga-1.6.gcc-4.1.2.lonestar    gram=gridftp1.ls4.tacc.utexas.edu:2119/jobmanager-fork,gram=gridftp1.ls4.tacc.utexas.edu:2119/jobmanager-sge
 
 
 

@@ -839,12 +839,11 @@ else
 if ($miware)
 {
 		  $cmd = "$access $fqdn 'mkdir -p $path;".
-                  "cd $path && test -d csa && (cd csa && svn up) || svn co $svn csa;".
+                  "cd $path && test -d csa && (cd csa && svn up -q) || svn co $svn csa -q;".
                   "$path/csa/csa_envset.pl \"$env_url\" \"$modules\";".
-                  "source $path/csa/test_scripts/env.sh;".
+                  "source $path/csa/test_scripts/env.sh > /dev/null 2>&1;".
 		  "$path/csa/csa_midtest.pl  $fqdn $miware $url $time $host'"; 
 
-print "$cmd \n";
 
 if ( 0 != system ($cmd) )
           {

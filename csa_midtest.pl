@@ -10,6 +10,7 @@ my @url_name=();
 my $jobmanager;
 my %geturl=();
 my $bigjob_script="https://raw.github.com/saga-project/BigJob/master/examples/example_local_single.py";
+my $result_svn="https://svn.cct.lsu.edu/repos/saga_siva/test_results/";
 
  $fqdn=shift(@ARGV);
  $midware=shift(@ARGV);
@@ -39,15 +40,27 @@ my @middleware=split(/,/,$midware);
   }
  }
 
+
+
+
 #Change to test directory
  
  chdir ("csa");
  my $csa_home=cwd();
+
+#Remove the previous result directories
+# if(-d "$csa_home/results_*")
+# {
+# print "Inside if";
+ system("rm -rf $csa_home/results_*");
+# }
+ 
  mkdir ("$csa_home/results_$time");
  my $results_home=("$csa_home/results_$time");
  chdir ("$csa_home/test_scripts");
  my $test_home=cwd();
  
+
 
 #Get the url if it is globus or condor
  my $url=0;
@@ -56,7 +69,7 @@ my @middleware=split(/,/,$midware);
  @url=split(/,/,$all_url);
 
 
- print "\n\n+----------------- Submitting jobs - $hostname -------------------+\n\n";
+ print "\n\n+------------------------ Submitting jobs - $hostname --------------------------+\n\n";
  foreach my $mw(@middleware)
  {
 
@@ -72,7 +85,8 @@ my @middleware=split(/,/,$midware);
 #X.509 Certificates
   if ($mw eq "gram")
   {
-  system("myproxy-logon");
+  print "#--- Enter the proxy credentials for X.509 certificate renewal ---#\n";
+  system("myproxy-logon -q");
   }
  
   if ((scalar keys %{$geturl{$mw}}) eq 0)
@@ -133,9 +147,12 @@ my @middleware=split(/,/,$midware);
    printf JOB "   jd\.set_attribute(\"Executable\"\,\"/bin/echo\")\n";
    printf JOB "   jd\.set_vector_attribute(\"Arguments\"\, [\"Hello\, World!\"])\n";
    printf JOB "   jd\.output=(\"$results_home\/out_$mw-$jm\")\n";
-   printf JOB "   jd\.error=(\"$results_home\/err_$mw-$jm\")\n";
  }
- if ($jm eq 'nourl')
+ if ($jm eq 'nourl' && $mw eq 'fork')
+  {
+  printf JOB "   js = saga.job.service(\"$mw://localhost\")\n";
+  }
+ elsif($jm eq 'nourl')
   {
   printf JOB "   js = saga.job.service(\"$mw://$fqdn\")\n";
   }
@@ -187,11 +204,11 @@ sleep(10);
 
 if($flag)
 {
-print "$mw - $jm ------> Failed \n";
+print "$mw - $jm ------> Failed \n\n";
 }
 else
 {
-print "$mw - $jm ------> Success! \n";
+print "$mw - $jm ------> Success! \n\n";
 }
 
 }
@@ -201,6 +218,6 @@ print "$mw - $jm ------> Success! \n";
 print "\n\n+-----------------------------------------------------------------------------+\n\n";
 
 #Add the results back to svn
-  system("svn add $results_home");
-  system("svn add $results_home/*");
-  system("svn commit -m \"Adding $results_home\" $results_home");
+  system("svn import $results_home $result_svn\/results_$time\/$hostname\/ -m \"Added results\" -q")
+  #system("svn add $results_home/*");
+  #system("svn commit -m \"Adding $results_home\" $results_home");
