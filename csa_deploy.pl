@@ -635,225 +635,175 @@ if ( $do_check )
 
 #Submit jobs on machines specified..
 
-if($do_test)
+if ( $do_test )
 {
-my @midware=();      
-my $test_host=0;
-my $midware=0;
-my @temp_host=();
-my @notfound=();
-my %test_hosts=();
-my @temp=();
-my @tmp=();
-my $cmd=0;
-my $time=localtime(time);
-$time=~s/ /_/g;
-$time=~s/:/-/g;
+  my @midware    =  ();      
+  my $test_host  =  0;
+  my $midware    =  0;
+  my @temp_host  =  ();
+  my @notfound   =  ();
+  my %test_hosts =  ();
+  my @temp       =  ();
+  my @tmp        =  ();
+  my $cmd        =  0;
+  my $time       =  localtime(time);
+  $time          =~ s/ /_/g;
+  $time          =~ s/:/-/g;
 
-  open   (TF, "<$CSA_TEST") || die "ERROR  : cannot open '$CSA_TEST': $!\n";
+  open (TF, "<$CSA_TEST") || die "ERROR  : cannot open '$CSA_TEST': $!\n";
   @tf = <TF>;
   close  (TF);
   chomp  (@tf);
   foreach my $tf ( @tf )
   {
-
     if ( $tf =~ /^\s*(?:#.*)?$/io )
     {
       # skip comment lines and empty lines
     }
-
-    elsif ($tf =~ (/^\s*(\w+)\s+([\w+,\/_=\s]+)*$/io))
-        {
-         if((grep {$_ eq $1} @hosts)&&(exists $csa_hosts{$1}))
-        {
-         $test_hosts {$1}{'modules'} = $2;   
-        }
-        }
-
+    elsif ( $tf =~ (/^\s*(\w+)\s+([\w+,\/_=\s]+)*$/io ) )
+    {
+      if ( (grep {$_ eq $1} @hosts) && (exists $csa_hosts{$1}) )
+      {
+        $test_hosts {$1}{'modules'} = $2;   
+      }
+    }
     elsif ( $tf =~ (/^\s*(\w+)\s+([\w+,*]+)\s+(((\w+)[\w+.:,\/-]+)|([\w]+))\s*(((\w+)[\w+.,=\/:-]+)|([\w]+))*$/io) )
     {
       $test_host   = $1; 
       $midware     = $2;
       $env_url	   = $3;
       $url         = $7;
-    # print "url is $url\n";
-	 if (!defined($url))
+
+      if ( !defined($url) )
       {
-       $url="no";
+        $url="no";
       }
-# Get all the middlewares in @midware array
-{
+
+      # Get all the middlewares in @midware array      
       my @tmp_midware=split (/,/, $midware);
-      foreach my $m (@tmp_midware)
+      foreach my $m ( @tmp_midware )
       {
-       if (!grep {$_ eq $m} @midware)
+        if ( !grep {$_ eq $m} @midware )
         {      
-        push(@midware,$m);
+          push ( @midware,$m );
         }
-      }
-}
-  
-
-      #if ( exists ( $test_hosts{$test_host} ) )
-      #{
-       # warn "WARNING: repetitive entry, host '$test_host'";
-      #}
-      #else
-      # {
-
-       # Check whether test host is present in the csa_hosts file
-       
-        if((grep {$_ eq $test_host} @hosts)&&(exists $csa_hosts{$test_host}))
-        {
+      } 
+     
+       # Check whether test host is present in the csa_hosts file    
+      if ( (grep {$_ eq $test_host} @hosts) && (exists $csa_hosts{$test_host}) )
+      {
         $test_hosts {$test_host}{'middware'}   = $midware;
         $test_hosts {$test_host}{'url'}        = $url;
         $test_hosts {$test_host}{'env_url'}    = $env_url;
-        }
-     # }
-     }
-=head
-	elsif ($tf =~ (/^\s*(\w+)\s+([\w+,\/_=\s]+)*$/io))
-	{
-         if((grep {$_ eq $1} @hosts)&&(exists $csa_hosts{$1}))
-	{
-         $test_hosts {$1}{'modules'} = $2;    
-	}
-	}
-=cut
+      }
+    }
     else
     {
       warn "WARNING: Cannot parse test host line '$tf'\n";
     }
   }
-        @temp_host=keys %test_hosts;
+        
+  @temp_host=keys %test_hosts;
   
-        foreach my $host ( @hosts )
-         {
-         if ( ! exists $csa_hosts{$host} )
-         {
-         warn " -- warning: unknown host '$host'\n";
-         }
-         elsif (!grep {$_ eq $host} @temp_host)
-         {
-        warn "WARNING: Host '$host' not added to the csa_test file\n";
-        }
-       }
-   if (! grep (/all/, @middleware) )
-   {
-   foreach my $mid (@middleware)
-   {
-    if (!grep {$_ eq $mid} @midware)
+  foreach my $host ( @hosts )
+  {
+    if ( ! exists $csa_hosts{$host} )
     {
-     warn "WARNING: unknown middleware '$mid' \n";
+      warn " -- warning: unknown host '$host'\n";
     }
-   }
-}
-# Print all the available and unavailable middlewares respective to the hosts
+    elsif ( !grep {$_ eq $host} @temp_host )
+    {
+      warn "WARNING: Host '$host' not added to the csa_test file\n";
+    }
+  }
 
-print "+-----------------+------------------------------------------+------------------------------------+\n";
-printf "| %-15s | %-40s | %-35s|\n", "Host", "Available", "Not Available";
-print "+-----------------+------------------------------------------+------------------------------------+\n";
-   foreach my $h (@temp_host)
-   {
-   @tmp=();
-   @temp=();
-   printf "| %-15s |",$h;
-  
+  if ( ! grep (/all/, @middleware) )
+  {
+    foreach my $mid ( @middleware )
+    {
+      if ( !grep {$_ eq $mid} @midware )
+      {
+        warn "WARNING: unknown middleware '$mid' \n";
+      }  
+    }
+  } 
+
+  # Print all the available and unavailable middlewares respective to the hosts
+
+  print "+-----------------+------------------------------------------+------------------------------------+\n";
+  printf "| %-15s | %-40s | %-35s|\n", "Host", "Available", "Not Available";
+  print "+-----------------+------------------------------------------+------------------------------------+\n";
+  foreach my $h ( @temp_host )
+  {
+    @tmp=();
+    @temp=();
+    printf "| %-15s |",$h;
     my @temp_midware = split (/,/,$test_hosts{$h}{'middware'});
-   if (grep (/all/, @middleware) )
+    
+    if ( grep (/all/, @middleware) )
     {
       $" = ",";
-     printf " %-40s |","@temp_midware";
-     printf "%-35s |",""; 
-     } 
-  else
-   {
-    foreach my $m (@middleware)
-    {
-    if (grep (/$m/,@temp_midware))
-    {
-    push (@tmp, $m);
-    }
+      printf " %-40s |","@temp_midware";
+      printf "%-35s |",""; 
+    } 
     else
     {
-    push (@temp, $m);
-    }
-    }
-    $" = ",";
-    my $a=@tmp;
-    if ($a)
-    {
-    $test_hosts{$h}{'middware'}="@tmp";
-    }
-    else
-    { 
-    $test_hosts{$h}{'middware'}=();
-    }
-    printf " %-40s |","@tmp";
-    printf "%-35s |","@temp"; 
-   }
+      foreach my $m ( @middleware )
+      {
+        if ( grep (/$m/,@temp_midware) )
+        {
+          push ( @tmp, $m );
+        }
+        else
+        {
+          push ( @temp, $m );
+        }
+      }
+      $" = ",";
+      my $a=@tmp;
+      
+      if ( $a )
+      {
+        $test_hosts{$h}{'middware'}="@tmp";
+      }
+      else
+      {  
+        $test_hosts{$h}{'middware'}=();
+      }
+      printf " %-40s |","@tmp";
+      printf "%-35s |","@temp"; 
+    } 
     printf "\n";
-print "+-----------------+------------------------------------------+------------------------------------+\n";
-    }
-#my @a=keys (%test_hosts);
-#foreach my $a (@a)
-#{
-#printf $test_hosts{$a};
-#}
-#--------------#---------------#---------------#
-# Submit jobs
-my $url = "no";
-my $modules="";
-foreach my $host (@temp_host)
-{
-my $fqdn   = $csa_hosts{$host}{'fqhn'};
-my $path   = $csa_hosts{$host}{'path'};
-my $access = $csa_hosts{$host}{'access'};
-my $miware = $test_hosts{$host}{'middware'};
-my $url = $test_hosts{$host}{'url'};
-my $env_url = $test_hosts{$host}{'env_url'};
-$modules = $test_hosts{$host}{'modules'};
-=head
-#Get the url if it is globus or condor
-my $url=0;
-print "Final url is $test_hosts{$host}{'url'} \n"; 
-if(!($test_hosts{$host}{'url'} eq "no"))
-{
-my @url=split(/,/,$test_hosts{$host}{'url'});
- foreach my $m (@url)
- {
-print "inside if\n";
-print "m is $m \n";
- @urldiv=split(/=/,$m);
- if ($urldiv[0] eq $miware)
-  {
-  $url = $urldiv[1];
+    print "+-----------------+------------------------------------------+------------------------------------+\n";
   }
- }
-}
-else
-{
- $url   = $test_hosts{$host}{'url'};
-}
-=cut
+  my $url = "no";
+  my $modules="";
+  
+  foreach my $host ( @temp_host )
+  {
+    my $fqdn   = $csa_hosts{$host}{'fqhn'};
+    my $path   = $csa_hosts{$host}{'path'};
+    my $access = $csa_hosts{$host}{'access'};
+    my $miware = $test_hosts{$host}{'middware'};
+    my $url    = $test_hosts{$host}{'url'};
+    my $env_url= $test_hosts{$host}{'env_url'};
+    $modules   = $test_hosts{$host}{'modules'};
 
-if ($miware)
-{
-		  $cmd = "$access $fqdn 'mkdir -p $path;".
-                  "cd $path && test -d csa && (cd csa && svn up -q) || svn co $svn csa -q;".
-                  "$path/csa/csa_envset.pl \"$env_url\" \"$modules\";".
-                  "source $path/csa/test_scripts/env.sh > /dev/null 2>&1;".
-		  "$path/csa/csa_midtest.pl  $fqdn $miware $url $time $host'"; 
+    if ( $miware ) 
+    {
+        $cmd = "$access $fqdn 'mkdir -p $path;                                   ".
+      " cd $path && test -d csa && (cd csa && svn up -q) || svn co $svn csa -q;  ".
+      " $path/csa/csa_envset.pl \"$env_url\" \"$modules\";                       ".
+      " source $path/csa/test_scripts/env.sh > /dev/null 2>&1;                   ".
+      " $path/csa/csa_midtest.pl  $fqdn $miware $url $time $host'                "; 
 
-
-if ( 0 != system ($cmd) )
-          {
-            print " Error: Cannot complete CSA test\n";
-            exit -1;
-          }
-
-}
-}
+      if ( 0 != system ($cmd) )
+      {
+        print " Error: Cannot complete CSA test\n";
+        exit -1;
+      }
+    } 
+  }
 }
 
 sub help (;$)
